@@ -1,9 +1,5 @@
 package com.usst.analyser.util;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
 import java.util.*;
 
 public class LexicalAnalysis {
@@ -16,18 +12,20 @@ public class LexicalAnalysis {
      * 5. 标识符 identifier 用户定义的变量名，常数名，过程名
      */
 
-    HashSet<String> keyword = new HashSet<>();
-    HashMap<String, Signs> signs = new HashMap<>();
+    private HashSet<String> keyword = new HashSet<>();
+    private HashMap<String, Signs> signs = new HashMap<>();
     HashMap<Integer, String> industry = new HashMap<Integer, String>();
     // http://www.cnblogs.com/nonefly/p/4688763.html
-    String[] keywords = new String[]{
+    private String[] keywords_java = new String[]{
             "abstract", "boolean", "break", "byte", "case", "catch", "char", "class", "continue", "default", "do",
             "double", "else", "extends", "final", "finally", "float", "for", "if", "implements", "import", "instanceof",
             "int", "interface", "long", "native", "new", "package", "private", "protected", "public", "return", "short",
             "static", "super", "switch", "synchronized", "this", "throw", "throws", "transient", "try", "void",
             "volatile", "while", "strictfp", "enum", "goto", "const", "assert"};
+    private String[] keywords_PL0 = new String[]{"const", "var", "procedure", "begin", "end", "ood", "if", "then",
+            "call", "while", "read", "write", "program"};
     // http://www.runoob.com/java/java-operators.html
-    String[] operators = new String[]{
+    private String[] operators = new String[]{
             "+", "-", "*", "/", "%", "++", "--", // 算术运算符
             "==", "!=", ">", "<", ">=", "<=", // 关系运算符
             "&", "|", "&", "~", "<<", ">>", ">>>", // 位运算符
@@ -44,29 +42,35 @@ public class LexicalAnalysis {
 
     // 将数组的值放入set或map中
     private void init() {
-        Collections.addAll(keyword, keywords);
+        Collections.addAll(keyword, keywords_PL0);
+        signs.put("\n", Signs.newLine);
         signs.put("+", Signs.plus);
         signs.put("-", Signs.minus);
         signs.put("*", Signs.multiply);
         signs.put("/", Signs.divide);
+        signs.put(":=", Signs.assign);
+        signs.put(">", Signs.moreThan);
+        signs.put("<", Signs.lessThan);
+        signs.put(".", Signs.period);
+        signs.put("=", Signs.equal);
+        signs.put("(", Signs.leftBracket);
+        signs.put(")", Signs.rightBracket);
+        signs.put(",", Signs.comma);
+        signs.put(":", Signs.colon);
+        signs.put("#", Signs.wellName);
+        signs.put(">=", Signs.moreOrEqual);
+        signs.put("<=", Signs.lessOrEqual);
+        signs.put("//", Signs.doubleSlash);
+        // java
         signs.put("%", Signs.remain);
         signs.put("++", Signs.plusOne);
         signs.put("--", Signs.minusOne);
-        signs.put("==", Signs.equal);
         signs.put("!=", Signs.notEqual);
         signs.put(";", Signs.semicolon);
-        signs.put("(", Signs.leftBracket);
-        signs.put(")", Signs.rightBracket);
-        signs.put("=", Signs.assign);
-        signs.put(".", Signs.point);
-        signs.put(">", Signs.moreThan);
-        signs.put("<", Signs.lessThan);
         signs.put("{", Signs.leftCurlyBrace);
         signs.put("}", Signs.rightCurlyBrace);
         signs.put("[", Signs.leftSquareBracket);
         signs.put("]", Signs.rightSquareBracket);
-        signs.put(",", Signs.comma);
-        signs.put(":", Signs.colon);
         signs.put("\"", Signs.doubleQuotation);
         signs.put("'", Signs.singleQuotation);
         signs.put("_", Signs.underscore);
@@ -90,7 +94,7 @@ public class LexicalAnalysis {
                 sb.append(text.charAt(i));
                 i++;
                 while (i < length) {
-                    if (Character.isLetter(text.charAt(i))) {
+                    if (Character.isLetter(text.charAt(i)) || Character.isDigit(text.charAt(i))) {
                         sb.append(text.charAt(i));
                         i++;
                     } else {
@@ -98,13 +102,13 @@ public class LexicalAnalysis {
                     }
                 }
                 // 判断是关键字还是标识符
-                if (keyword.contains(sb.toString())) {
+                if (keyword.contains(sb.toString().toLowerCase())) {
                     tuples.add(new Tuple(Tag.KEYWORD, "keyword", sb.toString()));
                 } else {
                     tuples.add(new Tuple(Tag.IDENTIFIER, "identifier", sb.toString()));
                 }
             }
-            if (i == length){
+            if (i == length) {
                 break;
             }
             // 数字
@@ -123,7 +127,7 @@ public class LexicalAnalysis {
                 // 加入tuples
                 tuples.add(new Tuple(Tag.CONSTANT, "constant", digit.toString()));
             }
-            if (i == length){
+            if (i == length) {
                 break;
             }
             // 判断是否为非字母字符
@@ -134,7 +138,8 @@ public class LexicalAnalysis {
                 while (i < length) {
                     if (!Character.isDigit(text.charAt(i)) && !Character.isLetter(text.charAt(i)) && text.charAt(i) != ' ') {
                         if (text.charAt(i) != '=' && text.charAt(i) != '+' && text.charAt(i) != '-'
-                                && text.charAt(i) != '&' && text.charAt(i) != '|') {
+                                && text.charAt(i) != '&' && text.charAt(i) != '|' && text.charAt(i) != '>'
+                                && text.charAt(i) != '<' && text.charAt(i) != '/') {
                             break;
                         }
                         sign.append(text.charAt(i));
@@ -153,23 +158,4 @@ public class LexicalAnalysis {
         return tuples;
     }
 
-    public static void main(String[] args) {
-        StringBuilder text = new StringBuilder();
-        try {
-            BufferedReader in = new BufferedReader(new FileReader(new File("F:\\principleofcompiling\\input")));
-            String temp;
-            while ((temp = in.readLine()) != null) {
-                text.append(temp);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        LexicalAnalysis lexicalAnalysis = new LexicalAnalysis();
-        List<Tuple> tuples = lexicalAnalysis.analyze(text.toString());
-        if (tuples != null) {
-            for (Tuple aTuple : tuples) {
-                System.out.println(aTuple.getNumber() + ", " + aTuple.getType() + ", " + aTuple.getName());
-            }
-        }
-    }
 }

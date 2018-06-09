@@ -3,12 +3,12 @@ package com.usst.analyser.util;
 public class Tuple {
     private int number;
     private String type;
-    private String name;
+    private String content;
 
-    public Tuple(int number, String type, String name) {
+    Tuple(int number, String type, String content) {
         this.number = number;
         this.type = type;
-        this.name = name;
+        this.content = content;
     }
 
     public int getNumber() {
@@ -19,7 +19,7 @@ public class Tuple {
         return type;
     }
 
-    public String getName() {
-        return name;
+    public String getContent() {
+        return content;
     }
 }
